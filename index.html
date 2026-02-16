@@ -6,12 +6,14 @@
     <title>Vision & Ventures</title>
     <style>
         :root {
-            --primary-color: #00bcd4; /* Cyan for accents */
-            --bg-color: #0f172a;      /* Dark Navy background */
-            --card-bg: #1e293b;       /* Lighter Navy for cards */
-            --text-main: #f1f5f9;     /* Off-white text */
-            --text-muted: #94a3b8;    /* Grey text */
-            --gold: #fbbf24;          /* Gold for Navy accent */
+            /* McLaren-inspired Palette */
+            --primary-color: #FF8700; /* Papaya Spark Orange */
+            --primary-hover: #e07600;
+            --bg-color: #111111;      /* Deep Carbon Black */
+            --card-bg: #1c1c1c;       /* Dark Graphite */
+            --text-main: #ffffff;     /* Pure White */
+            --text-muted: #a3a3a3;    /* Silver/Grey */
+            --accent-gold: #FFD700;   /* Retained purely for Navy specifics if needed, or blended */
         }
 
         * {
@@ -34,17 +36,19 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            background: linear-gradient(180deg, rgba(15,23,42,0) 0%, #0f172a 100%),
-                        radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            /* Subtle radial gradient to highlight center */
+            background: radial-gradient(circle at center, #2a2a2a 0%, #111111 70%);
             padding: 2rem;
         }
 
         h1 {
-            font-size: 4rem;
-            font-weight: 800;
+            font-size: 4.5rem;
+            font-weight: 900;
             letter-spacing: -2px;
             margin-bottom: 1rem;
-            background: -webkit-linear-gradient(45deg, #fff, var(--primary-color));
+            text-transform: uppercase;
+            font-style: italic; /* Adding a bit of 'speed' to the look */
+            background: linear-gradient(90deg, #fff, var(--primary-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -54,6 +58,8 @@
             color: var(--text-muted);
             max-width: 600px;
             margin: 0 auto;
+            font-weight: 300;
+            letter-spacing: 2px;
         }
 
         /* Container */
@@ -73,37 +79,42 @@
             margin-bottom: 2rem;
             border-left: 5px solid var(--primary-color);
             padding-left: 1rem;
+            text-transform: uppercase;
+            font-weight: 800;
         }
 
         /* Profile / Contact Card */
         .profile-card {
             background-color: var(--card-bg);
-            border-radius: 16px;
+            border-radius: 4px; /* Sharper corners for a racing feel */
             padding: 3rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border-top: 2px solid var(--primary-color); /* Orange top accent */
         }
 
         .role-badge {
-            background-color: rgba(251, 191, 36, 0.1); /* Gold tint */
-            color: var(--gold);
+            background-color: transparent;
+            color: var(--primary-color);
             padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 600;
+            border: 2px solid var(--primary-color);
+            border-radius: 0px; /* Sharp edges */
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 0.9rem;
+            letter-spacing: 1.5px;
+            font-size: 0.8rem;
             margin-bottom: 1.5rem;
-            border: 1px solid var(--gold);
+            box-shadow: 0 0 10px rgba(255, 135, 0, 0.2);
         }
 
         .profile-card h3 {
             font-size: 2.5rem;
             margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .contact-info {
@@ -120,13 +131,16 @@
             border: 1px solid var(--text-muted);
             color: var(--text-main);
             text-decoration: none;
-            border-radius: 8px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
             transition: all 0.3s ease;
         }
 
         .contact-btn:hover {
             border-color: var(--primary-color);
-            background-color: rgba(0, 188, 212, 0.1);
+            background-color: var(--primary-color);
+            color: #000; /* Black text on orange background for high contrast */
         }
 
         /* Ventures Section Grid */
@@ -138,40 +152,36 @@
 
         .venture-card {
             background-color: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 4px;
             padding: 2rem;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
             overflow: hidden;
+            border: 1px solid #333;
         }
 
         .venture-card:hover {
             transform: translateY(-5px);
-        }
-
-        .venture-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: var(--primary-color);
+            box-shadow: 0 10px 20px rgba(255, 135, 0, 0.1);
+            border-color: var(--primary-color);
         }
 
         .venture-card h3 {
             font-size: 1.75rem;
             margin-bottom: 0.5rem;
             color: var(--text-main);
+            font-weight: 800;
+            text-transform: uppercase;
         }
 
         .tagline {
             display: block;
             color: var(--primary-color);
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 1rem;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .venture-card p {
@@ -184,7 +194,8 @@
             padding: 3rem;
             color: var(--text-muted);
             font-size: 0.9rem;
-            border-top: 1px solid rgba(255,255,255,0.05);
+            background-color: #000;
+            border-top: 1px solid #222;
         }
 
         /* Mobile Adjustments */
