@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N.Kaye | System Boot</title>
+    <style>
+        :root {
+            /* Aerospace HUD Palette */
+            --bg-deep: #020408;
+            --bg-panel: #0a0f16;
+            --hud-primary: #00f3ff;  /* Cyan */
+            --hud-alert: #ff3e3e;    /* Red */
+            --hud-warning: #ffae00;  /* Amber */
+            --grid-line: rgba(0, 243, 255, 0.05);
+            --text-main: #e0f7fa;
+            --text-dim: #546e7a;
+            
+            --font-tech: 'Courier New', Courier, monospace;
+            --font-display: 'Segoe UI', Helvetica, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-tech);
+            overflow-x: hidden;
+        }
+
+        /* --- STARTUP TERMINAL STYLES --- */
+        #startup-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100vh;
+            background-color: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-size: 1.2rem;
+            padding: 2rem;
+            text-align: left;
+        }
+
+        .terminal-text {
+            color: var(--hud-primary);
+            text-shadow: 0 0 5px var(--hud-primary);
+            margin-bottom: 0.8rem;
+            opacity: 0;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* --- MAIN HUD INTERFACE --- */
+        #main-interface {
+            display: none;
+            opacity: 0;
+            transition: opacity 2s ease-in;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+            min-height: 100vh;
+        }
+
+        .scanline {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 243, 255, 0.02) 51%);
+            background-size: 100% 4px; pointer-events: none; z-index: 999;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; position: relative; z-index: 1; }
+        
+        /* --- DISCLAIMER TOP BAR --- */
+        .system-notice {
+            border: 1px solid var(--hud-alert);
+            background: rgba(255, 62, 62, 0.1);
+            color: #ffcccc;
+            padding: 1rem;
+            font-size: 0.8rem;
+            margin-bottom: 3rem;
+            text-align: center;
+            position: relative;
+        }
+        .system-notice strong { color: var(--hud-alert); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* --- HEADER & LAYOUT --- */
+        .status-bar {
+            display: flex; justify-content: space-between;
+            border-bottom: 1px solid var(--hud-primary);
+            padding-bottom: 0.5rem; margin-bottom: 4rem;
+            font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase;
+        }
+
+        header { margin-bottom: 6rem; border-left: 4px solid var(--hud-primary); padding-left: 2rem; }
+        h1 {
+            font-family: var(--font-display); font-size: 4rem; font-weight: 900;
+            text-transform: uppercase; letter-spacing: -2px; margin: 0; line-height: 1;
+            background: linear-gradient(90deg, #fff, var(--hud-primary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .designation { color: var(--hud-warning); font-size: 1.2rem; margin-top: 1rem; display: block; }
+
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
+        @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+        /* --- MODULES / CARDS --- */
+        .module {
+            background: rgba(10, 15, 22, 0.8); border: 1px solid var(--text-dim);
+            padding: 2rem; margin-bottom: 2rem; position: relative;
+            transition: all 0.3s ease;
+        }
+        .module:hover { border-color: var(--hud-primary); box-shadow: 0 0 15px rgba(0, 243, 255, 0.1); }
+        
+        /* Corner Accents */
+        .module::before { content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px; border-top: 2px solid var(--hud-primary); border-left: 2px solid var(--hud-primary); }
+        .module::after { content: ''; position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px; border-bottom: 2px solid var(--hud-primary); border-right: 2px solid var(--hud-primary); }
+
+        .module.funding { border-color: var(--hud-warning); background: rgba(255, 174, 0, 0.05); }
+        .module.funding::before, .module.funding::after { border-color: var(--hud-warning); }
+
+        .module-header {
+            font-size: 0.9rem; color: var(--hud-primary);
+            border-bottom: 1px dashed var(--text-dim); padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem; display: flex; justify-content: space-between;
+        }
+
+        /* --- IMAGE SPACERS --- */
+        .img-spacer {
+            width: 100%;
+            height: 200px;
+            background: rgba(0,0,0,0.5);
+            border: 1px dashed var(--text-dim);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .img-spacer::after { content: '[ IMAGE_DATA_SLOT ]'; }
+        
+        /* If you add real images, use this class for them */
+        .project-img {
+            width: 100%;
+            height: auto;
+            border: 1px solid var(--text-dim);
+            margin-bottom: 1.5rem;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        .project-img:hover { opacity: 1; }
+
+        /* --- TYPOGRAPHY --- */
+        h2 { font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 1rem; text-transform: uppercase; }
+        p { margin-bottom: 1rem; color: #b0bec5; line-height: 1.6; }
+
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.2rem; }
+        .data-key { color: var(--text-dim); }
+        .data-val { color: var(--hud-warning); text-align: right; }
+
+        .timeline-node { border-left: 1px solid var(--hud-primary); padding-left: 1.5rem; margin-bottom: 1.5rem; position: relative; }
+        .timeline-node::before { content: ''; position: absolute; left: -4px; top: 0; width: 7px; height: 7px; background: var(--bg-deep); border: 1px solid var(--hud-primary); }
+        .grade-tag { font-size: 0.75rem; color: var(--hud-primary); text-transform: uppercase; display: block; margin-bottom: 0.2rem; }
+
+        .project-tag { display: inline-block; font-size: 0.7rem; padding: 2px 8px; border: 1px solid var(--hud-alert); color: var(--hud-alert); margin-bottom: 0.5rem; }
+
+        /* --- ETHOS & BUTTONS --- */
+        .ethos-terminal { font-family: var(--font-tech); background-color: #000; padding: 2rem; border: 1px solid var(--hud-primary); margin-top: 3rem; }
+        .btn { display: inline-block; margin-top: 1rem; padding: 10px 20px; background: var(--hud-primary); color: #000; text-decoration: none; font-weight: bold; text-transform: uppercase; border: none; font-family: var(--font-tech); }
+        .btn:hover { background: #fff; }
+        .btn-fund { background: var(--hud-warning); color: #000; width: 100%; text-align: center; display: block; }
+        .btn-fund:hover { background: #ffcc00; }
+
+        .blink-dot { animation: blink 1s linear infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+    <div id="startup-screen">
+        <div class="terminal-text" id="line1"></div>
+        <div class="terminal-text" id="line2"></div>
+        <div class="terminal-text" id="line3"></div>
+        <div class="terminal-text highlight-text" id="line4"></div>
+        <div class="terminal-text" id="line5"></div>
+        <div class="terminal-text" id="line6" style="margin-top: 2rem; color: var(--text-dim);">
+            > PRESS [ENTER] OR CLICK TO INITIALIZE_
+        </div>
+    </div>
+
+    <div id="main-interface">
+        <div class="scanline"></div>
+
+        <div class="container">
+            
+            <div class="system-notice">
+                <strong>[ ! ] DISCLAIMER // NON-OFFICIAL USE ONLY</strong><br>
+                The views, opinions, and concepts expressed on this site are strictly those of the author in a personal capacity. 
+                They do not reflect the official policy, position, or endorsement of the United States Navy, the Department of Defense, 
+                or the United States Government.
+            </div>
+
+            <div class="status-bar">
+                <span>SYS.ONLINE</span>
+                <span>LOC: ANNAPOLIS, MD [USA]</span>
+                <span><span class="blink-dot">●</span> LIVE FEED</span>
+            </div>
+
+            <header>
+                <div style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 0.5rem;">
+                    // PILOT_PROFILE_LOADED
+                </div>
+                <h1>Nathanael Kaye</h1>
+                <span class="designation">
+                    > Aerospace Engineer | Naval Officer | Entrepreneur
+                </span>
+            </header>
+
+            <div class="dashboard-grid">
+                
+                <div class="main-col">
+                    
+                    <div class="module funding">
+                        <div class="module-header" style="color: var(--hud-warning); border-color: var(--hud-warning);">
+                            <span>MISSION_DIRECTIVE: IMMERSION</span>
+                            <span class="blink-dot">STATUS: AWAITING_FUNDS</span>
+                        </div>
+                        
+                        <div class="img-spacer" style="border-color: var(--hud-warning); color: var(--hud-warning);"></div>
+
+                        <h2 style="color: #fff;">Operation: Africa Deployment</h2>
+                        <p><strong>Objective:</strong> To execute a deep-dive immersion into the African continent. This is not tourism; this is reconnaissance for <strong>Slethikos</strong>.</p>
+                        <p>To truly revolutionize agriculture and lift communities out of poverty, one cannot design from a desk in Annapolis. I must touch the soil, speak the languages, and understand the cultural nuance of the people I aim to serve.</p>
+                        
+                        <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border: 1px solid var(--hud-warning); margin-top: 1.5rem;">
+                            <p style="color: var(--hud-warning); font-size: 0.8rem; margin-bottom: 0.5rem;">>> SYSTEM_ALERT: FUNDING_REQUIRED_FOR_LAUNCH</p>
+                            <a href="INSERT_YOUR_GOFUNDME_LINK_HERE" target="_blank" class="btn btn-fund">[ EXECUTE DONATION PROTOCOL ]</a>
+                        </div>
+                    </div>
+                    
+                    <div class="module">
+                        <div class="module-header"><span>ACTIVE_VENTURES</span><span>STATUS: DEPLOYED</span></div>
+                        
+                        <div style="margin-bottom: 4rem;">
+                            <div class="img-spacer"></div>
+                            <span class="project-tag">AUTOMOTIVE // HARDWARE</span>
+                            <h2>Alpha Verus</h2>
+                            <p><strong>Mission:</strong> Designing the most indestructible, exhilarating analog vehicle ever.</p>
+                            <p>Fusing modern design philosophy with basic drivetrain technology to create a pure mechanical driving experience for bold risk-takers. Democratizing speed for the masses.</p>
+                        </div>
+
+                        <div>
+                            <div class="img-spacer"></div>
+                            <span class="project-tag">AGRICULTURE // MACRO-ECONOMICS</span>
+                            <h2>Slethikos</h2>
+                            <p><strong>Mission:</strong> Virtuous capitalism. Bringing goodness to the four corners of the planet by building virtues directly into the business model.</p>
+                        </div>
+                    </div>
+
+                    <div class="module">
+                        <div class="module-header"><span>ENGINEERING_MODS</span><span>CLASS: COMPOSITES</span></div>
+                        <div class="img-spacer"></div>
+                        <h2>BMW 530e Re-Vision</h2>
+                        <p>Applying aerospace composite techniques (fiberglass & carbon fiber layup) to re-envision automotive aesthetics.</p>
+                    </div>
+
+                    <div class="module">
+                        <div class="module-header"><span>ARCHIVE_LOG</span><span>ORIGIN_STORY // EARLY_CONCEPTS</span></div>
+                        <p style="color: var(--text-dim); font-size: 0.9rem;">
+                            >> RETRIEVING DATA FROM CHILDHOOD MEMORY BANKS...
+                        </p>
+
+                        <div style="margin-top: 2rem; border-left: 1px solid var(--text-dim); padding-left: 1rem;">
+                            <h3 style="color: var(--hud-primary);">Early Concept 01: [Insert Name]</h3>
+                            <p>Description of the website or business idea you created as a child goes here.</p>
+                        </div>
+
+                        <div style="margin-top: 2rem; border-left: 1px solid var(--text-dim); padding-left: 1rem;">
+                            <h3 style="color: var(--hud-primary);">Early Concept 02: [Insert Name]</h3>
+                            <p>Description of the website or business idea you created as a child goes here.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="side-col">
+                    <div class="module">
+                        <div class="module-header"><span>PILOT_TELEMETRY</span><span>ID: 884-NK</span></div>
+                        <div class="img-spacer" style="height: 150px;">[ HEADSHOT_SLOT ]</div>
+                        
+                        <div class="data-row"><span class="data-key">ORIGIN</span><span class="data-val">MULTI-CULTURAL</span></div>
+                        <div class="data-row"><span class="data-key">LANG.PRI</span><span class="data-val">ENGLISH / CHINESE</span></div>
+                        <div class="data-row"><span class="data-key">LANG.SEC</span><span class="data-val">JP, TH, RU, FR</span></div>
+                        <div class="data-row"><span class="data-key">BASES</span><span class="data-val">USA, TW, TH, JP</span></div>
+
+                        <h4 style="margin-top: 1.5rem; color: var(--hud-primary); margin-bottom: 0.5rem;">SYSTEM DIAGNOSTICS</h4>
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display:flex; justify-content:space-between; font-size:0.8rem;"><span>ADAPTABILITY</span><span>98%</span></div>
+                            <div style="height:4px; background:#333; margin-top:2px;"><div style="height:100%; width:98%; background:var(--hud-primary);"></div></div>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display:flex; justify-content:space-between; font-size:0.8rem;"><span>PATIENCE (SYS.ERR)</span><span style="color:var(--hud-alert);">CRITICAL</span></div>
+                            <div style="height:4px; background:#333; margin-top:2px;"><div style="height:100%; width:85%; background:var(--hud-alert);"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="module">
+                        <div class="module-header"><span>TRAINING_LOG</span><span>ACADEMIC_HISTORY</span></div>
+                        <div class="timeline-node"><span class="grade-tag">Current</span><strong>Naval Aviation Maintenance Duty Officer</strong><br><span style="font-size:0.8rem; color:var(--text-dim);">Flight Status: Active</span></div>
+                        <div class="timeline-node"><span class="grade-tag">Class of 2026</span><strong>US Naval Academy</strong><br><span style="font-size:0.8rem; color:var(--text-dim);">Annapolis, MD</span></div>
+                        <div class="timeline-node"><span class="grade-tag">Class of 2025 (1 Year)</span><strong>Georgia Inst. of Technology</strong><br><span style="font-size:0.8rem; color:var(--text-dim);">Atlanta, GA</span></div>
+                        <div class="timeline-node"><span class="grade-tag">Grades 9-12</span><strong>Lutheran High School</strong><br><span style="font-size:0.8rem; color:var(--text-dim);">La Verne, CA</span></div>
+                        <div class="timeline-node"><span class="grade-tag">Grade 8</span><strong>Emmaus Lutheran</strong><br><span style="font-size:0.8rem; color:var(--text-dim);">Alhambra, CA</span></div>
+                        <div class="timeline-node"><span class="grade-tag">Grade 7</span><strong>Concordia Middle</strong><br><span style="font-size:0.8rem; color:var(--text-dim);">Taiwan</span></div>
+                        <div class="timeline-node"><span class="grade-tag">Grades 4-6</span><strong>Lan Tan Elementary</strong><br><span style="font-size:0.8rem; color:var(--text-dim);">Taiwan</span></div>
+                        <div class="timeline-node"><span class="grade-tag">Grades 2-4</span><strong>Grace International</strong><br><span style="font-size:0.8rem; color:var(--text-dim);">Thailand</span></div>
+                        <div class="timeline-node"><span class="grade-tag">Grade 1</span><strong>Intl. School of Bangkok</strong><br><span style="font-size:0.8rem; color:var(--text-dim);">Thailand</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ethos-terminal">
+                <p><span class="cmd-line">root@kaye-terminal:~$</span> cat ethos.txt</p>
+                <p class="blink-dot" style="color: #fff; font-size: 1.1rem; margin-top: 1rem;">"My time is limited on this earth. I want to bring as much good into the world as possible."</p>
+                <br>
+                <p><span class="cmd-line">root@kaye-terminal:~$</span> ./initiate_contact.sh</p>
+                <a href="mailto:your.email@example.com" class="btn">EXECUTE CONNECTION</a>
+            </div>
+            
+            <footer style="text-align: center; margin-top: 2rem; color: var(--text-dim); font-size: 0.8rem;">
+                SYSTEMS NOMINAL // © 2026 NATHANAEL KAYE
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        const lines = [
+            { id: 'line1', text: '> "BE CRAZY FOR HUMANITY."', delay: 800 },
+            { id: 'line2', text: '> "HUMANITY NEEDS BOLD RISK TAKERS."', delay: 2500 },
+            { id: 'line3', text: '> "CHALLENGE THE STATUS QUO TO SERVE."', delay: 4200 },
+            { id: 'line4', text: '"CHANGING THE WORLD STARTS HERE..."', delay: 6000 },
+            { id: 'line5', text: '> SYSTEM READY. ACCESS GRANTED.', delay: 7500 },
+            { id: 'line6', text: '', delay: 8200 }
+        ];
+
+        function typeLine(lineObj) {
+            setTimeout(() => {
+                const el = document.getElementById(lineObj.id);
+                if (lineObj.text === '') {
+                    el.style.opacity = 1; 
+                } else {
+                    el.innerText = lineObj.text;
+                    el.style.opacity = 1;
+                }
+            }, lineObj.delay);
+        }
+
+        lines.forEach(typeLine);
+
+        document.body.addEventListener('click', () => {
+            const startup = document.getElementById('startup-screen');
+            const main = document.getElementById('main-interface');
+            
+            startup.style.transition = 'opacity 1s ease-out';
+            startup.style.opacity = 0;
+            
+            setTimeout(() => {
+                startup.style.display = 'none';
+                main.style.display = 'block';
+                void main.offsetWidth; 
+                main.style.opacity = 1;
+            }, 1000);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.body.click();
+            }
+        });
+    </script>
+</body>
+</html>
